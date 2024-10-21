@@ -1,6 +1,15 @@
-const mongoose = require("mongoose")
+require('dotenv').config();
+const mongoose = require('mongoose');
 
 const connectDB = async () => {
-    await mongoose.connect("mongodb+srv://ratneshmaurya083:123%40maurya@cluster0.fwy5t.mongodb.net/devTinderApp")
-}
-module.exports = connectDB
+  try {
+    await mongoose.connect(process.env.MONGODB_URL, {
+      dbName: 'devTinderApp',  
+    });
+  } catch (error) {
+    console.error('Error connecting to MongoDB:', error);
+    process.exit(1);  
+  }
+};
+
+module.exports = connectDB;
