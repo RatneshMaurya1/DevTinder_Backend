@@ -15,6 +15,68 @@ app.post("/signup", async(req,res) => {
     }
 })
 
+app.get("/user", async (req,res) => {
+    const email = req.body.email
+    let user = await User.find({email:email})
+    try {
+        if (user.length === 0) {
+            res.status(404).send("user not found")
+        }else{
+            res.send(user)
+        }
+    } catch (error) {
+        res.status(400).send("Error while saving the user",error)
+    }
+})
+app.get("/user/:id", async (req,res) => {
+    const id = req.params.id
+    try {
+        let user = await User.findById(id)
+        if (user) {
+            res.send(user)
+        }else{
+            res.status(404).send("user not found")
+        }
+    } catch (error) {
+        res.status(400).send("Error while getting the user",error)
+    }
+})
+
+
+app.delete("/user", async (req,res) => {
+    let userID = req.body.userID
+    try {
+        const deletedUser = await User.findOneAndDelete(userID)
+        res.send("user deleted successfully")
+    } catch (error) {
+        res.status(400).send("Error while getting the user",error)
+    }
+})
+
+app.patch("/user", async (req,res) => {
+    let userID = req.body.userID
+    let data = req.body
+    try {
+        const updatedUser = await User.findOneAndUpdate({_id:userID},data)
+        res.send(updatedUser)
+    } catch (error) {
+        res.status(400).send("Error while getting the user",error)
+    }
+})
+
+app.get("/feed", async (req,res) => {
+    let user = await User.find({})
+    try {
+        if (user.length === 0) {
+            res.status(404).send("user not found")
+        }else{
+            res.send(user)
+        }
+    } catch (error) {
+        res.status(400).send("Error while saving the user",error)
+    }
+})
+
 
 
 
