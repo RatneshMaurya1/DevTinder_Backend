@@ -4,20 +4,45 @@ const app = express();
 const PORT = 4000;
 app.use(express.json());
 const User = require("./models/user");
+const { validateSignup } = require("./utils/validate");
+const bcrypt = require("bcrypt");
 
 app.post("/signup", async (req, res) => {
-  const user = new User(req.body);
-  const userKeys = Object.keys(req.body);
   try {
-    const requiredField = ["firstName", "lastName", "email", "password"];
-    const missingField = requiredField.filter((f) => !userKeys.includes(f));
-    if (missingField.length > 0) {
-      throw new Error(`missing required field: ${missingField}`);
-    }
+    validateSignup(req);
+    const { firstName, lastName, email, password } = req.body;
+
+    const hashPassword = await bcrypt.hash(password, 10);
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashPassword,
+    });
+
     await user.save();
     res.send("user created successfully");
   } catch (error) {
     res.status(400).send(`Error while saving the user:${error.message}`);
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({email:email});
+    if (!user) {
+      throw new Error("Invalid email or password");
+    }
+    console.log(user.password)
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (isValidPassword) {
+      res.send("Logged in successfully");
+    } else {
+      throw new Error("Invalid email or password");
+    }
+  } catch (error) {
+    res.status(400).send(`Error while login the user:${error.message}`);
   }
 });
 
@@ -63,17 +88,28 @@ app.patch("/user/:userID", async (req, res) => {
   let data = req.body;
 
   try {
-    const allowedUpdate = ["gender", "firstName", "lastName", "password","age","photoUrl","about","skills"];
+    const allowedUpdate = [
+      "gender",
+      "firstName",
+      "lastName",
+      "password",
+      "age",
+      "photoUrl",
+      "about",
+      "skills",
+    ];
     const isUpdatedField = Object.keys(data).every((k) =>
       allowedUpdate.includes(k)
     );
     if (!isUpdatedField) {
       throw new Error("update is not allowed");
     }
-    if(data.skills.length > 5){
-        throw new Error("only 5 skills is allowed")
+    if (data.skills.length > 5) {
+      throw new Error("only 5 skills is allowed");
     }
-    const updatedUser = await User.findOneAndUpdate({ _id: userID }, data,{runValidators:true});
+    const updatedUser = await User.findOneAndUpdate({ _id: userID }, data, {
+      runValidators: true,
+    });
     res.send(updatedUser);
   } catch (error) {
     res.status(400).send(`Error while saving the user:${error.message}`);
