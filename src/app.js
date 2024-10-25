@@ -1,91 +1,105 @@
 const express = require("express");
 const connectDB = require("./config/database");
-const app = express()
-const PORT = 4000
-app.use(express.json())
-const User = require("./models/user")
+const app = express();
+const PORT = 4000;
+app.use(express.json());
+const User = require("./models/user");
 
-app.post("/signup", async(req,res) => {
-    const user = new User(req.body)
-    try {
-        await user.save()
-        res.send("user created successfully")
-    } catch (error) {
-        res.status(400).send("Error while saving the user",error)
+app.post("/signup", async (req, res) => {
+  const user = new User(req.body);
+  const userKeys = Object.keys(req.body);
+  try {
+    const requiredField = ["firstName", "lastName", "email", "password"];
+    const missingField = requiredField.filter((f) => !userKeys.includes(f));
+    if (missingField.length > 0) {
+      throw new Error(`missing required field: ${missingField}`);
     }
-})
+    await user.save();
+    res.send("user created successfully");
+  } catch (error) {
+    res.status(400).send(`Error while saving the user:${error.message}`);
+  }
+});
 
-app.get("/user", async (req,res) => {
-    const email = req.body.email
-    let user = await User.find({email:email})
-    try {
-        if (user.length === 0) {
-            res.status(404).send("user not found")
-        }else{
-            res.send(user)
-        }
-    } catch (error) {
-        res.status(400).send("Error while saving the user",error)
+app.get("/user", async (req, res) => {
+  const email = req.body.email;
+  let user = await User.find({ email: email });
+  try {
+    if (user.length === 0) {
+      res.status(404).send("user not found");
+    } else {
+      res.send(user);
     }
-})
-app.get("/user/:id", async (req,res) => {
-    const id = req.params.id
-    try {
-        let user = await User.findById(id)
-        if (user) {
-            res.send(user)
-        }else{
-            res.status(404).send("user not found")
-        }
-    } catch (error) {
-        res.status(400).send("Error while getting the user",error)
+  } catch (error) {
+    res.status(400).send("Error while saving the user", error);
+  }
+});
+app.get("/user/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    let user = await User.findById(id);
+    if (user) {
+      res.send(user);
+    } else {
+      res.status(404).send("user not found");
     }
-})
+  } catch (error) {
+    res.status(400).send("Error while getting the user", error);
+  }
+});
 
+app.delete("/user", async (req, res) => {
+  let userID = req.body.userID;
+  try {
+    const deletedUser = await User.findOneAndDelete(userID);
+    res.send("user deleted successfully");
+  } catch (error) {
+    res.status(400).send("Error while getting the user", error);
+  }
+});
 
-app.delete("/user", async (req,res) => {
-    let userID = req.body.userID
-    try {
-        const deletedUser = await User.findOneAndDelete(userID)
-        res.send("user deleted successfully")
-    } catch (error) {
-        res.status(400).send("Error while getting the user",error)
+app.patch("/user/:userID", async (req, res) => {
+  let userID = req.params.userID;
+  let data = req.body;
+
+  try {
+    const allowedUpdate = ["gender", "firstName", "lastName", "password","age","photoUrl","about","skills"];
+    const isUpdatedField = Object.keys(data).every((k) =>
+      allowedUpdate.includes(k)
+    );
+    if (!isUpdatedField) {
+      throw new Error("update is not allowed");
     }
-})
-
-app.patch("/user", async (req,res) => {
-    let userID = req.body.userID
-    let data = req.body
-    try {
-        const updatedUser = await User.findOneAndUpdate({_id:userID},data)
-        res.send(updatedUser)
-    } catch (error) {
-        res.status(400).send("Error while getting the user",error)
+    if(data.skills.length > 5){
+        throw new Error("only 5 skills is allowed")
     }
-})
+    const updatedUser = await User.findOneAndUpdate({ _id: userID }, data,{runValidators:true});
+    res.send(updatedUser);
+  } catch (error) {
+    res.status(400).send(`Error while saving the user:${error.message}`);
+  }
+});
 
-app.get("/feed", async (req,res) => {
-    let user = await User.find({})
-    try {
-        if (user.length === 0) {
-            res.status(404).send("user not found")
-        }else{
-            res.send(user)
-        }
-    } catch (error) {
-        res.status(400).send("Error while saving the user",error)
+app.get("/feed", async (req, res) => {
+  let user = await User.find({});
+  try {
+    if (user.length === 0) {
+      res.status(404).send("user not found");
+    } else {
+      res.send(user);
     }
-})
+  } catch (error) {
+    res.status(400).send("Error while saving the user", error);
+  }
+});
 
-
-
-
-
-connectDB().then(() => {
-    console.log("Database connected successfully...")
-    app.listen(PORT,() => {
-        console.log(`server is running at ${PORT}`)
-    })
-}).catch((err) => {
-    console.error("DB connection failed",err)
-})
+connectDB()
+  .then(() => {
+    console.log("Database connected successfully...");
+    app.listen(PORT, () => {
+      console.log(`server is running at ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("DB connection failed", err);
+  });
