@@ -6,6 +6,10 @@ app.use(express.json());
 const User = require("./models/user");
 const { validateSignup } = require("./utils/validate");
 const bcrypt = require("bcrypt");
+const cookieParser =  require("cookie-parser")
+const JWT = require("jsonwebtoken")
+const {userAuth} = require("./middlewares/userAuth")
+app.use(cookieParser())
 
 app.post("/signup", async (req, res) => {
   try {
@@ -34,9 +38,12 @@ app.post("/login", async (req, res) => {
     if (!user) {
       throw new Error("Invalid email or password");
     }
-    console.log(user.password)
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (isValidPassword) {
+
+      const token = await JWT.sign({_id:user._id}, "devTinder")
+      res.cookie("token",token)
+
       res.send("Logged in successfully");
     } else {
       throw new Error("Invalid email or password");
@@ -45,6 +52,15 @@ app.post("/login", async (req, res) => {
     res.status(400).send(`Error while login the user:${error.message}`);
   }
 });
+
+app.get("/profile", userAuth, async (req,res) => {
+  try {
+    const user = req.user
+    res.send(user)
+  } catch (error) {
+    res.status(400).send(`Error while getting the user profile:${error.message}`);
+  }
+})
 
 app.get("/user", async (req, res) => {
   const email = req.body.email;
