@@ -16,4 +16,23 @@ function validateSignup(req){
     }
 }
 
-module.exports = {validateSignup}
+function validateProfiledit(req){
+    const allowedUpdate = [
+        "gender",
+        "firstName",
+        "lastName",
+        "age",
+        "photoUrl",
+        "about",
+        "skills",
+      ];
+      const isUpdatedField = Object.keys(req.body).every((k) =>
+        allowedUpdate.includes(k)
+      );
+      return isUpdatedField
+}
+
+module.exports = {
+    validateSignup,
+    validateProfiledit
+}

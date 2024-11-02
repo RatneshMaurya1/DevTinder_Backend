@@ -16,7 +16,6 @@ async function userAuth(req, res, next) {
     if (!user) {
       throw new Error("user not found");
     }
-    console.log(user);
     req.user = user;
     next();
   } catch (error) {
